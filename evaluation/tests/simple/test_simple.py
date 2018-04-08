@@ -22,7 +22,7 @@
 import os, sys, random, math
 import tensorflow as tf
 import numpy as np
-from google.colab import files
+from datetime import datetime
 from argparse import ArgumentParser, FileType
 
 def weight_variable(shape):
@@ -84,15 +84,15 @@ def test_circle():
     for i in range(30000 + 1):
         sess.run(train, {x: features, y: labels})
         if i % 5000 == 0:
-            print "Iteration:", i
+            print ("Iteration:", i)
             # print "\t", sess.run([regularized_loss], {x: features, y: labels})
-            print "\t", sess.run([meansq], {x: features, y: labels})
+            print ("\t", sess.run([meansq], {x: features, y: labels}))
     
     for i in range(8):
         theta = math.pi * i / 4
         prediction = sess.run(y_, {x: [[theta]]})
-        print "At %.2fpi, cos is %.4f (%.4f, true) and sin is %.4f (%.4f)" % \
-        (float(i) / 4, prediction[0][0], math.cos(theta), prediction[0][1], math.sin(theta))
+        print ("At %.2fpi, cos is %.4f (%.4f, true) and sin is %.4f (%.4f)" % \
+        (float(i) / 4, prediction[0][0], math.cos(theta), prediction[0][1], math.sin(theta)))
         
 """
 """
@@ -146,17 +146,17 @@ def test_sphere():
     for iter in range(100000 + 1):
         sess.run(train, {x: features, y: labels})
         if iter % 1000 == 0:
-            print "Iteration:", iter
+            print (str(datetime.now()), "Iteration:", iter)
             # print "\t", sess.run([regularized_loss], {x: features, y: labels})
-            print "\t", sess.run([meansq], {x: features, y: labels})
+            print ("\t", sess.run([meansq], {x: features, y: labels}))
     
             for i in range(4):
                 theta = math.pi * i / 4
                 for j in range(2):
                     theta2 = math.pi * j / 2
                     prediction = sess.run(y_, {x: [[theta, theta2]]})
-                    print "At %.2fpi and %.2fpi, x is %.3f (%.3f, true), y is %.3f (%.3f), and z is %.3f (%.3f)" % \
-                    (float(i) / 4, float(j) / 2, prediction[0][0], math.cos(theta) * math.sin(theta2), prediction[0][1], math.sin(theta) * math.sin(theta2), prediction[0][2], math.cos(theta2))
+                    print ("At %.2fpi and %.2fpi, x is %.3f (%.3f, true), y is %.3f (%.3f), and z is %.3f (%.3f)" % \
+                    (float(i) / 4, float(j) / 2, prediction[0][0], math.cos(theta) * math.sin(theta2), prediction[0][1], math.sin(theta) * math.sin(theta2), prediction[0][2], math.cos(theta2)))
 
         
 """
