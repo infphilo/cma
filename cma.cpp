@@ -17,25 +17,126 @@
  * along with CMA.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <iostream>
+#include <string>
+#include <cmath>
+#include <cassert>
 #include "tiffio.h"
 
-int main(int argc,char **argv)
-{
-   TIFF* tif = TIFFOpen("circle.tif", "w");
-   if(tif == NULL) {
-     return -1;
-   }
-   
-   uint32 w, h;
-   size_t npixels;
-   uint32* raster;
+const double PI = 3.141592653589793238463;
 
-   TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &w);
-   TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &h);
-   
-   TIFFClose(tif);
-   exit(0);
+void draw_circle() {
+  TIFF* tif = TIFFOpen("circle.tif", "w");
+  if(tif == NULL) {
+    return;
+  }
+  
+  const uint32 width = 500, height = 500, radius = 200;
+  const uint32 cx = width / 2, cy = height / 2;
+  const uint32 nsamples = 1;
+  
+  TIFFSetField(tif, TIFFTAG_IMAGEWIDTH, width);
+  TIFFSetField(tif, TIFFTAG_IMAGELENGTH, height);
+  // TIFFSetField(tif, TIFFTAG_IMAGELENGTH, height);
+  TIFFSetField(tif, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
+  TIFFSetField(tif, TIFFTAG_SAMPLESPERPIXEL, 1);
+  TIFFSetField(tif, TIFFTAG_COMPRESSION, COMPRESSION_LZW) ;
+  TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, 8) ;
+  TIFFSetField(tif, TIFFTAG_ROWSPERSTRIP, TIFFDefaultStripSize(tif, width*nsamples));
+  
+  uint8* img = new uint8[height * width];
+  memset(img, 255, width * height);
+  
+  const size_t num_theta = 1000;
+  for(size_t i = 0; i < num_theta; i++) {
+    float theta = 2 * PI * i / (num_theta - 1);
+    float fx = cos(theta);
+    float fy = sin(theta);
+    uint32 x = cx + fx * radius;
+    uint32 y = cy + fy * radius;
+    assert(x >= 0 && x < width && y >= 0 && y < height);
+    img[y * width + x] = 0;
+  }
+  
+  for(uint32 r = 0; r < height; r++) {
+    if(TIFFWriteScanline(tif, &img[r * width], r) != 1) {
+      std::cout<< "Unable to write a row." << std::endl;
+      break;
+    }
+  }
+  
+  delete img;
+  TIFFClose(tif);
+}
+
+void draw_sphere() {
+  TIFF* tif = TIFFOpen("sphere.tif", "w");
+  if(tif == NULL) {
+    return;
+  }
+  
+  const uint32 width = 500, height = 500, depth = 500, radius = 200;
+  const uint32 cx = width / 2, cy = height / 2, cz = depth / 2;
+  const uint32 nsamples = 4;
+
+  uint8* img = new uint8[depth * height * width];
+  memset(img, 0, depth * width * height);
+  
+  const size_t num_theta = 1000, num_theta2 = 1000;
+  for(size_t i = 0; i < num_theta; i++) {
+    float theta = 2 * PI * i / (num_theta - 1);
+    for(size_t j = 0; j < num_theta2; j++) {
+      float theta2 = PI * j / (num_theta2 - 1);
+      float fx = cos(theta); // * sin(theta2);
+      float fy = sin(theta); // * sin(theta2);
+      float fz = cos(theta2);
+      uint32 x = cx + fx * radius;
+      uint32 y = cy + fy * radius;
+      uint32 z = cz; // + fz * radius;
+      assert(x >= 0 && x < width && y >= 0 && y < height && z >= 0 && z < depth);
+      img[(z * height + y) * width + x] = 255;
+
+      // DK - debugging purposes
+      // std::cout << "x: " << x << ", y: " << y << ", z: " << z << std::endl; 
+    }
+  }
+
+  for(uint32 page = 0; page < depth; page++) {
+    TIFFSetField(tif, TIFFTAG_IMAGEWIDTH, width);
+    TIFFSetField(tif, TIFFTAG_IMAGELENGTH, height);
+    // TIFFSetField(tif, TIFFTAG_IMAGELENGTH, height);
+    TIFFSetField(tif, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
+    TIFFSetField(tif, TIFFTAG_SAMPLESPERPIXEL, 1);
+    TIFFSetField(tif, TIFFTAG_COMPRESSION, COMPRESSION_LZW) ;
+    TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, 8) ;
+    TIFFSetField(tif, TIFFTAG_ROWSPERSTRIP, TIFFDefaultStripSize(tif, width * nsamples));
+    
+    TIFFSetField(tif, TIFFTAG_SUBFILETYPE, FILETYPE_PAGE);
+    TIFFSetField(tif, TIFFTAG_PAGENUMBER, page, depth);
+  
+    for(uint32 r = 0; r < height; r++) {
+      uint8* row = new uint8[width * nsamples];
+      for(uint32 c = 0; c < width; c++) {
+	row[c * nsamples] = img[(page * height + r) * width + c];
+	row[c * nsamples + 1] = 0;
+	row[c * nsamples + 2] = 0;
+	row[c * nsamples + 3] = (row[c * nsamples] > 0 ? 255 : 0);
+      }
+      if(TIFFWriteScanline(tif, row, r) != 1) {
+	std::cout<< "Unable to write a row." << std::endl;
+	break;
+      }
+    }
+    TIFFWriteDirectory(tif);
+  }  
+
+  delete img;
+  TIFFClose(tif);
+}
+
+int main(int argc,char **argv) {
+  draw_circle();
+  draw_sphere();
+  return 0;
 }
 
