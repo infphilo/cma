@@ -11,14 +11,15 @@ from ij3d import Image3DUniverse
 imp = IJ.openImage("http://imagej.nih.gov/ij/images/flybrain.zip")  
 stack = imp.getImageStack()
   
+# http://3dviewer.neurofly.de/
+univ = Image3DUniverse()  
+univ.show()
+c = univ.addVoltex(imp);
+
 print "number of slices:", imp.getNSlices()  
 
-# Show the peaks as spheres in 3D, along with orthoslices:  
-univ = Image3DUniverse(512, 512)  
-# univ.addIcospheres(ps, Color3f(1, 0, 0), 2, cell_diameter/2, "Cells").setLocked(True)  
-# univ.addOrthoslice(imp).setLocked(True)  
-univ.show()
 
+"""
 # A list of green slices  
 greens = []  
   
@@ -41,3 +42,4 @@ imp2 = ImagePlus("Green channel", stack2)
 # Set a green look-up table:  
 IJ.run(imp2, "Green", "")  
 imp2.show()
+"""
