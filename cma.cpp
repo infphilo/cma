@@ -31,7 +31,7 @@ void draw_circle() {
     return;
   }
   
-  const uint32 width = 500, height = 500, radius = 200;
+  const uint32 width = 250, height = 250, radius = 100;
   const uint32 cx = width / 2, cy = height / 2;
   const uint32 nsamples = 1;
   
@@ -65,7 +65,7 @@ void draw_circle() {
     }
   }
   
-  delete img;
+  delete []img;
   TIFFClose(tif);
 }
 
@@ -75,7 +75,7 @@ void draw_sphere() {
     return;
   }
   
-  const uint32 width = 500, height = 500, depth = 500, radius = 200;
+  const uint32 width = 250, height = 250, depth = 250, radius = 100;
   const uint32 cx = width / 2, cy = height / 2, cz = depth / 2;
   const uint32 nsamples = 4;
 
@@ -87,28 +87,40 @@ void draw_sphere() {
     float theta = 2 * PI * i / (num_theta - 1);
     for(size_t j = 0; j < num_theta2; j++) {
       float theta2 = PI * j / (num_theta2 - 1);
-      float fx = cos(theta); // * sin(theta2);
-      float fy = sin(theta); // * sin(theta2);
+      float fx = cos(theta) * sin(theta2);
+      float fy = sin(theta) * sin(theta2);
       float fz = cos(theta2);
       uint32 x = cx + fx * radius;
       uint32 y = cy + fy * radius;
-      uint32 z = cz; // + fz * radius;
+      uint32 z = cz + fz * radius;
       assert(x >= 0 && x < width && y >= 0 && y < height && z >= 0 && z < depth);
       img[(z * height + y) * width + x] = 255;
-
-      // DK - debugging purposes
-      // std::cout << "x: " << x << ", y: " << y << ", z: " << z << std::endl; 
     }
   }
+
+  // DK - debugging purposes
+#if 0
+  for(size_t z = 0; z < depth; z++) {
+    if(z != 125) continue;
+    for(size_t y = 0; y < height; y++) {
+      for(size_t x = 0; x < width; x++) {
+	uint8 v = img[(z * height + y) * width + x];
+	std::cout << (v > 0 ? '1' : '0');
+      }
+      std::cout << std::endl;
+    }
+
+    break;
+  }
+#endif
 
   for(uint32 page = 0; page < depth; page++) {
     TIFFSetField(tif, TIFFTAG_IMAGEWIDTH, width);
     TIFFSetField(tif, TIFFTAG_IMAGELENGTH, height);
-    // TIFFSetField(tif, TIFFTAG_IMAGELENGTH, height);
     TIFFSetField(tif, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
-    TIFFSetField(tif, TIFFTAG_SAMPLESPERPIXEL, 1);
-    TIFFSetField(tif, TIFFTAG_COMPRESSION, COMPRESSION_LZW) ;
-    TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, 8) ;
+    TIFFSetField(tif, TIFFTAG_SAMPLESPERPIXEL, nsamples);
+    // TIFFSetField(tif, TIFFTAG_COMPRESSION, COMPRESSION_LZW);
+    TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, 8);
     TIFFSetField(tif, TIFFTAG_ROWSPERSTRIP, TIFFDefaultStripSize(tif, width * nsamples));
     
     TIFFSetField(tif, TIFFTAG_SUBFILETYPE, FILETYPE_PAGE);
@@ -130,7 +142,7 @@ void draw_sphere() {
     TIFFWriteDirectory(tif);
   }  
 
-  delete img;
+  delete []img;
   TIFFClose(tif);
 }
 
