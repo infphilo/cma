@@ -63,7 +63,7 @@ void draw_circle() {
     uint8* row = new uint8[width * nsamples];
     for(uint32 c = 0; c < width; c++) {
       row[c * nsamples] = img[r * width + c];
-      row[c * nsamples + 1] = 0;
+      row[c * nsamples + 1] = 255;
       row[c * nsamples + 2] = 0;
       row[c * nsamples + 3] = (row[c * nsamples] > 0 ? 255 : 255);
     }
@@ -77,36 +77,92 @@ void draw_circle() {
   TIFFClose(tif);
 }
 
+void get_xy(const std::vector<std::vector<float> >& mat_list,
+	    const std::vector<std::vector<float> >& bias_list,
+	    const std::vector<std::pair<size_t, size_t> > dim_list,
+	    float theta,
+	    float& x,
+	    float& y) {
+  assert(mat_list.size() == bias_list.size() && mat_list.size() == dim_list.size());
+  std::vector<float> values;
+  values.push_back(theta);
+  std::vector<float> next_values;  
+  for(size_t l = 0; l < dim_list.size(); l++) {
+    size_t m = dim_list[l].first;
+    size_t n = dim_list[l].second;
+
+    // DK - debugging purposes
+    // std::cout << "Layer: " << l << ", m: " << m << ", n: " << n << std::endl;
+    
+    for(size_t m2 = 0; m2 < m; m2++) {
+      float value = 0.0f;
+      for(size_t n2 = 0; n2 < n; n2++) {
+	value += (mat_list[l][m2 + n2 * m] * values[n2]);
+      }
+      value += bias_list[l][m2];
+      if(l + 1 < dim_list.size()) {
+	if(value < 0) value = 0.0f;
+      }
+
+      // DK - debugging purposes
+      // std::cout << "\tAt " << m2 << ", " << value << std::endl;
+      
+      next_values.push_back(value);
+    }
+
+    values = next_values;
+    next_values.clear();
+  }
+
+  assert(values.size() == 2);
+  x = values[0];
+  y = values[1];
+}
+
 void draw_approx_circle() {
   std::ifstream netfile("circle_mat.txt");
   if(!netfile.is_open())
     return;
 
+  std::vector<std::vector<float> > mat_list;
+  std::vector<std::vector<float> > bias_list;
+  std::vector<std::pair<size_t, size_t> > dim_list;
+
   size_t line = 0;
+  netfile >> line;
+  size_t cur_line = 0;
   while(netfile.good()) {
+    std::vector<float> vec;
     size_t n = 1, m = 1;
-    if(line % 2 == 0) {
-      netfile >> m >> n;
+    if(cur_line % 2 == 0) {
+      netfile >> n >> m;
+      dim_list.push_back(std::make_pair<size_t, size_t>(m, n));
     } else {
       netfile >> n;
-    }
-
-    std::cout << "m: " << m << ", n: " << n << std::endl;
+    }    
 
     size_t mn = m * n;
     float number;
     while(true) {
       netfile >> number;
+      vec.push_back(number);
       mn--;
       if(mn == 0) break;
-
-      std::cout << "number: " << number << std::endl;
     } 
     if(mn > 0) {
-      std::cerr << "Error happened in reading circle_mat.txt file" << std::endl;
+      std::cerr << "Error occurs in reading circle_mat.txt file" << std::endl;
     }
 
-    line++;
+    if(cur_line % 2 == 0) {
+      mat_list.push_back(vec);
+    } else {
+      bias_list.push_back(vec);
+    }
+
+    cur_line++;
+    if(cur_line == line) {
+      break;
+    }
   }
   netfile.close();
   
@@ -133,8 +189,13 @@ void draw_approx_circle() {
   const size_t num_theta = 1000;
   for(size_t i = 0; i < num_theta; i++) {
     float theta = 2 * PI * i / (num_theta - 1);
-    float fx = cos(theta);
-    float fy = sin(theta);
+    float fx = 0.0f, fy = 0.0f;
+    get_xy(mat_list,
+	   bias_list,
+	   dim_list,
+	   theta,
+	   fx,
+	   fy);
     uint32 x = cx + fx * radius;
     uint32 y = cy + fy * radius;
     assert(x >= 0 && x < width && y >= 0 && y < height);
