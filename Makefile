@@ -101,6 +101,14 @@ CMA_BUILD_CPPS_MAIN = $(BUILD_CPPS) hisat2_build_main.cpp
 SEARCH_FRAGMENTS = $(wildcard search_*_phase*.c)
 VERSION = $(shell cat VERSION)
 
+ifeq (1,$(MACOS))
+	LIBS += -framework Accelerate
+	LIBS += -framework OpenCL
+	EXTRA_FLAGS += -I/Systm/Library/Frameworks/Accelerate.framework/Versions/Current/Headers
+else
+	DYNAMIC_LIBS += -lOpenCL
+endif
+
 # Convert BITS=?? to a -m flag
 BITS=32
 ifeq (x86_64,$(shell uname -m))
@@ -193,7 +201,7 @@ both: cma-bin
 both-debug: cma-bin-debug
 
 DEFS=-fno-strict-aliasing \
-     -DHISAT2_VERSION="\"`cat VERSION`\"" \
+     -DCMA_VERSION="\"`cat VERSION`\"" \
      -DBUILD_HOST="\"`hostname`\"" \
      -DBUILD_TIME="\"`date`\"" \
      -DCOMPILER_VERSION="\"`$(CXX) -v 2>&1 | tail -1`\"" \

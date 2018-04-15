@@ -119,7 +119,7 @@ void draw_sphere() {
     TIFFSetField(tif, TIFFTAG_IMAGELENGTH, height);
     TIFFSetField(tif, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
     TIFFSetField(tif, TIFFTAG_SAMPLESPERPIXEL, nsamples);
-    // TIFFSetField(tif, TIFFTAG_COMPRESSION, COMPRESSION_LZW);
+    TIFFSetField(tif, TIFFTAG_COMPRESSION, COMPRESSION_LZW);
     TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, 8);
     TIFFSetField(tif, TIFFTAG_ROWSPERSTRIP, TIFFDefaultStripSize(tif, width * nsamples));
     
