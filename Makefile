@@ -79,7 +79,7 @@ else
 	PTHREAD_LIB = -lpthread
 endif
 
-SEARCH_LIBS = 
+SEARCH_LIBS =
 BUILD_LIBS = 
 INSPECT_LIBS =
 

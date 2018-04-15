@@ -18,9 +18,11 @@
  */
 
 #include <iostream>
+#include <fstream>
 #include <string>
 #include <cmath>
 #include <cassert>
+#include <vector>
 #include "tiffio.h"
 
 const double PI = 3.141592653589793238463;
@@ -33,11 +35,92 @@ void draw_circle() {
   
   const uint32 width = 250, height = 250, radius = 100;
   const uint32 cx = width / 2, cy = height / 2;
+  const uint32 nsamples = 4;
+  
+  TIFFSetField(tif, TIFFTAG_IMAGEWIDTH, width);
+  TIFFSetField(tif, TIFFTAG_IMAGELENGTH, height);
+  TIFFSetField(tif, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
+  TIFFSetField(tif, TIFFTAG_SAMPLESPERPIXEL, nsamples);
+  TIFFSetField(tif, TIFFTAG_COMPRESSION, COMPRESSION_LZW) ;
+  TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, 8) ;
+  TIFFSetField(tif, TIFFTAG_ROWSPERSTRIP, TIFFDefaultStripSize(tif, width*nsamples));
+  
+  uint8* img = new uint8[height * width];
+  memset(img, 0, width * height);
+  
+  const size_t num_theta = 1000;
+  for(size_t i = 0; i < num_theta; i++) {
+    float theta = 2 * PI * i / (num_theta - 1);
+    float fx = cos(theta);
+    float fy = sin(theta);
+    uint32 x = cx + fx * radius;
+    uint32 y = cy + fy * radius;
+    assert(x >= 0 && x < width && y >= 0 && y < height);
+    img[y * width + x] = 255;
+  }
+  
+  for(uint32 r = 0; r < height; r++) {
+    uint8* row = new uint8[width * nsamples];
+    for(uint32 c = 0; c < width; c++) {
+      row[c * nsamples] = img[r * width + c];
+      row[c * nsamples + 1] = 0;
+      row[c * nsamples + 2] = 0;
+      row[c * nsamples + 3] = (row[c * nsamples] > 0 ? 255 : 255);
+    }
+    if(TIFFWriteScanline(tif, row, r) != 1) {
+      std::cout<< "Unable to write a row." << std::endl;
+      break;
+    }
+  }
+  
+  delete []img;
+  TIFFClose(tif);
+}
+
+void draw_approx_circle() {
+  std::ifstream netfile("circle_mat.txt");
+  if(!netfile.is_open())
+    return;
+
+  size_t line = 0;
+  while(netfile.good()) {
+    size_t n = 1, m = 1;
+    if(line % 2 == 0) {
+      netfile >> m >> n;
+    } else {
+      netfile >> n;
+    }
+
+    std::cout << "m: " << m << ", n: " << n << std::endl;
+
+    size_t mn = m * n;
+    float number;
+    while(true) {
+      netfile >> number;
+      mn--;
+      if(mn == 0) break;
+
+      std::cout << "number: " << number << std::endl;
+    } 
+    if(mn > 0) {
+      std::cerr << "Error happened in reading circle_mat.txt file" << std::endl;
+    }
+
+    line++;
+  }
+  netfile.close();
+  
+  TIFF* tif = TIFFOpen("circle_approx.tif", "w");
+  if(tif == NULL) {
+    return;
+  }
+  
+  const uint32 width = 250, height = 250, radius = 100;
+  const uint32 cx = width / 2, cy = height / 2;
   const uint32 nsamples = 1;
   
   TIFFSetField(tif, TIFFTAG_IMAGEWIDTH, width);
   TIFFSetField(tif, TIFFTAG_IMAGELENGTH, height);
-  // TIFFSetField(tif, TIFFTAG_IMAGELENGTH, height);
   TIFFSetField(tif, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
   TIFFSetField(tif, TIFFTAG_SAMPLESPERPIXEL, 1);
   TIFFSetField(tif, TIFFTAG_COMPRESSION, COMPRESSION_LZW) ;
@@ -146,9 +229,13 @@ void draw_sphere() {
   TIFFClose(tif);
 }
 
+void init_network() {
+}
+
 int main(int argc,char **argv) {
   draw_circle();
-  draw_sphere();
+  draw_approx_circle();
+  // draw_sphere();
   return 0;
 }
 
