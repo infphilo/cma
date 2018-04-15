@@ -63,9 +63,9 @@ void draw_circle() {
     uint8* row = new uint8[width * nsamples];
     for(uint32 c = 0; c < width; c++) {
       row[c * nsamples] = img[r * width + c];
-      row[c * nsamples + 1] = 255;
+      row[c * nsamples + 1] = 0;
       row[c * nsamples + 2] = 0;
-      row[c * nsamples + 3] = (row[c * nsamples] > 0 ? 255 : 255);
+      row[c * nsamples + 3] = (row[c * nsamples] > 0 ? 255 : 0);
     }
     if(TIFFWriteScanline(tif, row, r) != 1) {
       std::cout<< "Unable to write a row." << std::endl;
@@ -120,7 +120,7 @@ void get_xy(const std::vector<std::vector<float> >& mat_list,
 }
 
 void draw_approx_circle() {
-  std::ifstream netfile("circle_mat.txt");
+  std::ifstream netfile("circle_mat_4L.txt");
   if(!netfile.is_open())
     return;
 
@@ -201,6 +201,46 @@ void draw_approx_circle() {
     assert(x >= 0 && x < width && y >= 0 && y < height);
     img[y * width + x] = 0;
   }
+
+  // Draw tangent lines at 0, pi/4, pi/2, 2pi/3, pi, ...
+#if 1
+  for(size_t i = 0; i < 8; i++) {
+    float theta = 2 * PI * i / 8;
+    float fx = 0.0f, fy = 0.0f;
+    get_xy(mat_list,
+	   bias_list,
+	   dim_list,
+	   theta,
+	   fx,
+	   fy);
+    uint32 x = cx + fx * radius;
+    uint32 y = cy + fy * radius;
+    float fx1 = 0.0f, fy1 = 0.0f;
+    get_xy(mat_list,
+	   bias_list,
+	   dim_list,
+	   theta - 0.01f,
+	   fx1,
+	   fy1);
+    float fx2 = 0.0f, fy2 = 0.0f;
+    get_xy(mat_list,
+	   bias_list,
+	   dim_list,
+	   theta + 0.01f,
+	   fx2,
+	   fy2);
+    float r = sqrt((fx2 - fx1) * (fx2 - fx1) + (fy2 - fy1) * (fy2 - fy1));
+    float dx = (fx2 - fx1) / r;
+    float dy = (fy2 - fy1) / r;
+    for(int j = -50; j < 51; j++) {
+      int32 ix = x + dx * j;
+      if(ix < 0 || ix >= width) continue;
+      int32 iy = y + dy * j;
+      if(iy < 0 || iy >= height) continue;
+      img[iy * width + ix] = 0;
+    }
+  }
+#endif
   
   for(uint32 r = 0; r < height; r++) {
     if(TIFFWriteScanline(tif, &img[r * width], r) != 1) {
@@ -211,6 +251,16 @@ void draw_approx_circle() {
   
   delete []img;
   TIFFClose(tif);
+}
+
+void get_xyz(const std::vector<std::vector<float> >& mat_list,
+	     const std::vector<std::vector<float> >& bias_list,
+	     const std::vector<std::pair<size_t, size_t> > dim_list,
+	     float theta,
+	     float theta2,
+	     float& x,
+	     float& y,
+	     float& z) {
 }
 
 void draw_sphere() {
@@ -290,7 +340,7 @@ void draw_sphere() {
   TIFFClose(tif);
 }
 
-void init_network() {
+void draw_approx_sphere() {
 }
 
 int main(int argc,char **argv) {
