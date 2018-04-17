@@ -367,7 +367,7 @@ void get_xyz(float theta,
 }
 
 void draw_approx_sphere() {
-  if(!init_network("sphere_mat_12L_1K.txt")) {
+  if(!init_network("sphere_mat_12L_3K.txt")) {
     return;
   }
 
