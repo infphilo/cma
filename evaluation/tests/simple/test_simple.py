@@ -179,8 +179,8 @@ def test_sphere():
           dim_str = "%d %d" % (nparray.shape[0], nparray.shape[1])
         else:
           dim_str = "%d" % nparray.shape[0]
-          wt_str = [str(wt) for wt in np.ravel(nparray)]
-          file.write("%s %s\n" % (dim_str, ' '.join(wt_str)))
+        wt_str = [str(wt) for wt in np.ravel(nparray)]
+        file.write("%s %s\n" % (dim_str, ' '.join(wt_str)))
       file.close()
 
         
