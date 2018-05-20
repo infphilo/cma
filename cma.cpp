@@ -18,6 +18,7 @@
  */
 
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 #include <string>
 #include <cmath>
@@ -367,11 +368,11 @@ void get_xyz(float theta,
 }
 
 void draw_approx_sphere() {
-  if(!init_network("sphere_mat_12L_3K.txt")) {
+  if(!init_network("sphere_mat_l4_100K.txt")) {
     return;
   }
 
-  TIFF* tif = TIFFOpen("sphere_approx.tif", "w");
+  TIFF* tif = TIFFOpen("sphere_l4_100K.tif", "w");
   if(tif == NULL) {
     return;
   }
@@ -382,15 +383,20 @@ void draw_approx_sphere() {
 
   uint8* img = new uint8[depth * height * width];
   memset(img, 0, depth * width * height);
-  
-  const size_t num_theta = 1000, num_theta2 = 1000;
+
+  // DK - debugging purposes
+  size_t count = 0;
+    
+  const size_t num_theta = 1000;
   for(size_t i = 0; i < num_theta; i++) {
-    float theta = 2 * PI * i / (num_theta - 1);
+    float theta = PI * (i + 0.0f) / (num_theta - 1);
+    float r_xy = sqrt(1.0f - cos(theta) * cos(theta));
+    const size_t num_theta2 = 1000 * r_xy;
     for(size_t j = 0; j < num_theta2; j++) {
-      float theta2 = PI * j / (num_theta2 - 1);
+      float theta2 = 2 * PI * (j + 0.5f) / (num_theta2 - 1);
       float fx = 0.0f, fy = 0.0f, fz = 0.0f;
-      get_xyz(theta,
-	      theta2,
+      get_xyz(theta2,
+	      theta,
 	      fx,
 	      fy,
 	      fz);
@@ -401,20 +407,21 @@ void draw_approx_sphere() {
       img[(z * height + y) * width + x] = 255;
 
       // DK - debugging purposes
-      // std::cout << "x: " << x << ", y: " << y << ", z: " << z << std::endl;
+      count++;
     }
 
     // DK - debugging purposes
     if(i % 100 == 0) {
-      std::cout << "i: " << i << std::endl;
+      std::cout << "i: " << i << ", count: " << count << std::endl;
     }
   }
 
     // DK - debugging purposes
-#if 1
+#if 0
   for(size_t z = 0; z < depth; z++) {
     if(z != 125) continue;
     for(size_t y = 0; y < height; y++) {
+      std::cout << std::setw(4) << y << ' ';
       for(size_t x = 0; x < width; x++) {
 	uint8 v = img[(z * height + y) * width + x];
 	std::cout << (v > 0 ? '1' : '0');
@@ -453,7 +460,10 @@ void draw_approx_sphere() {
       if(ix < 0 || ix >= width) continue;
       int32 iy = y + dy * j;
       if(iy < 0 || iy >= height) continue;
-      img[iy * width + ix] = 0;
+      img[(cz * height + iy) * width + ix] = 0;
+
+      // DK - debugging purposes
+      std::cout << "x: " << ix << ", y: " << iy << ", z: " << cz << std::endl;
     }
   }
 #endif
