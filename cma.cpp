@@ -368,11 +368,11 @@ void get_xyz(float theta,
 }
 
 void draw_approx_sphere() {
-  if(!init_network("sphere_mat_l4_100K.txt")) {
+  if(!init_network("sphere_mat_l3_500K.txt")) {
     return;
   }
 
-  TIFF* tif = TIFFOpen("sphere_l4_100K.tif", "w");
+  TIFF* tif = TIFFOpen("sphere_l3_500K.tif", "w");
   if(tif == NULL) {
     return;
   }
